@@ -108,8 +108,9 @@ namespace MismaSesion
             {
                 resultado = File.GetLastWriteTime(ruta);
             }
-            catch (System.ArgumentException)
+            catch (Exception e)
             {
+                Log($"UltimaModificacion - Exception: {e}");
                 resultado = DateTime.MinValue;
             }
             return resultado;
@@ -130,7 +131,14 @@ namespace MismaSesion
                 if (!Directory.Exists(resultado))
                 {
                     Log($"Creando directorio {resultado}");
-                    Directory.CreateDirectory(resultado);
+                    try
+                    {
+                        Directory.CreateDirectory(resultado);
+                    }
+                    catch (System.UnauthorizedAccessException)
+                    {
+                        Log($"Access to the path {resultado} is denied");
+                    }
                 }
                 resultado = Path.Combine(resultado, archivo.Trim());
             }
