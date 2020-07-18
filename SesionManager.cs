@@ -7,6 +7,7 @@ namespace MismaSesion
 {
     public class SesionManager
     {
+        public string Nombre { get; set; }
         public string Origen { get; }
         public string Destino { get; }
         public string RutaAux { get; }
@@ -14,23 +15,23 @@ namespace MismaSesion
         public string[] Perfiles { get; }
         public string Proceso { get; set; }
 
-
-        public SesionManager(string proceso)
+        public SesionManager(NavegadorConfigurationElement nav, string proceso)
         {
-            this.RutaAux = ConfigurationManager.AppSettings.Get("RutaServidorAux");
-            this.Perfiles = ConfigurationManager.AppSettings.Get("Perfiles").Split(";");
-            this.Archivos = ConfigurationManager.AppSettings.Get("Archivos").Split(";");
-
+            this.Nombre = nav.Nombre;
+            this.RutaAux = nav.RutaServidorAux;
+            this.Perfiles = nav.Perfiles.Split(";");
+            this.Archivos = nav.Archivos.Split(";");
+            
             if (proceso.ToLower().Trim() == "cierre")
             {
-                Origen = ConfigurationManager.AppSettings.Get("RutaLocal");
-                Destino = ConfigurationManager.AppSettings.Get("RutaServidor");
+                Origen = nav.RutaLocal;
+                Destino = nav.RutaServidor;
                 Proceso = "cierre";
             }
             else if (proceso.ToLower().Trim() == "inicio")
             {
-                Origen = ConfigurationManager.AppSettings.Get("RutaServidor");
-                Destino = ConfigurationManager.AppSettings.Get("RutaLocal");
+                Origen = nav.RutaServidor;
+                Destino = nav.RutaLocal;
                 Proceso = "inicio";
             }
             else
@@ -40,7 +41,7 @@ namespace MismaSesion
         }
         public void CopiarArchivos()
         {
-            Log("--------Inicia el proceso de copiado");
+            Log($"--------Inicia el proceso de copiado {this.Nombre}");
             foreach (string perfil in Perfiles)
             {
                 foreach (string archivo in this.Archivos)
@@ -59,7 +60,7 @@ namespace MismaSesion
                     }
                 }
             }
-            Log("--------Finaliza el proceso de copiado");
+            Log($"--------Finaliza el proceso de copiado {this.Nombre}");
         }
 
         private void Cierre(string origen, string destino, string aux)
