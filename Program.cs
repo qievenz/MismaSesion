@@ -10,7 +10,7 @@ namespace MismaSesion
     {
         static void Main(string[] args)
         {
-            string proceso = "inicio";
+            string proceso = "cierre";
             #if (!DEBUG)
                 proceso = args[0];
             #endif
