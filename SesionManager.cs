@@ -7,6 +7,7 @@ namespace MismaSesion
 {
     public class SesionManager
     {
+        public string Nombre { get; set; }
         public string Origen { get; }
         public string Destino { get; }
         public string RutaAux { get; }
@@ -14,23 +15,23 @@ namespace MismaSesion
         public string[] Perfiles { get; }
         public string Proceso { get; set; }
 
-
-        public SesionManager(string proceso)
+        public SesionManager(NavegadorConfigurationElement nav, string proceso)
         {
-            this.RutaAux = ConfigurationManager.AppSettings.Get("RutaServidorAux");
-            this.Perfiles = ConfigurationManager.AppSettings.Get("Perfiles").Split(";");
-            this.Archivos = ConfigurationManager.AppSettings.Get("Archivos").Split(";");
-
+            this.Nombre = nav.Nombre;
+            this.RutaAux = nav.RutaServidorAux;
+            this.Perfiles = nav.Perfiles.Split(";");
+            this.Archivos = nav.Archivos.Split(";");
+            
             if (proceso.ToLower().Trim() == "cierre")
             {
-                Origen = ConfigurationManager.AppSettings.Get("RutaLocal");
-                Destino = ConfigurationManager.AppSettings.Get("RutaServidor");
+                Origen = nav.RutaLocal;
+                Destino = nav.RutaServidor;
                 Proceso = "cierre";
             }
             else if (proceso.ToLower().Trim() == "inicio")
             {
-                Origen = ConfigurationManager.AppSettings.Get("RutaServidor");
-                Destino = ConfigurationManager.AppSettings.Get("RutaLocal");
+                Origen = nav.RutaServidor;
+                Destino = nav.RutaLocal;
                 Proceso = "inicio";
             }
             else
@@ -40,14 +41,22 @@ namespace MismaSesion
         }
         public void CopiarArchivos()
         {
-            Log("--------Inicia el proceso de copiado");
+            Log($"--------Inicia el proceso de copiado {this.Nombre}");
             foreach (string perfil in Perfiles)
             {
                 foreach (string archivo in this.Archivos)
                 {
-                    var archivoOrigen = ArmarRutaArchivo(this.Origen, perfil, archivo);
-                    var archivoDestino = ArmarRutaArchivo(this.Destino, perfil, archivo);
-                    var archivoRutaAux = ArmarRutaArchivo(this.RutaAux, perfil, archivo);
+                    string archivoOrigen = "", archivoDestino = "", archivoRutaAux = "";
+                    archivoOrigen = ArmarRutaArchivo(this.Origen, perfil, archivo);
+                    try
+                    {
+                        archivoDestino = ArmarRutaArchivo(this.Destino, perfil, archivo);
+                    }
+                    catch (System.Exception)
+                    {
+                        Log($"Error al armar la ruta de destino: {this.Destino} Continúa con la auxiliar.");
+                    }
+                    archivoRutaAux = ArmarRutaArchivo(this.RutaAux, perfil, archivo);
 
                     if (Proceso == "inicio")
                     {
@@ -59,17 +68,13 @@ namespace MismaSesion
                     }
                 }
             }
-            Log("--------Finaliza el proceso de copiado");
+            Log($"--------Finaliza el proceso de copiado {this.Nombre}");
         }
 
         private void Cierre(string origen, string destino, string aux)
         {
-            Log($"Cierre - Origen: {origen}, Destino: {destino}, Aux: {aux}");
-            try
-            {
-                Copiar(origen, destino);
-            }
-            catch (System.IO.IOException)
+            Log($"###   Cierre - Origen: {origen}, Destino: {destino}, Aux: {aux}");
+            if (!Copiar(origen, destino))
             {
                 Copiar(origen, aux);
             }
@@ -116,10 +121,30 @@ namespace MismaSesion
             return resultado;
         }
 
-        private void Copiar(string origen, string destino)
+        private bool Copiar(string origen, string destino)
         {
-            File.Copy(origen, destino, true);
-            Log($"Copia finalizada {origen} -> {destino}");
+            bool resultado = true;
+            try
+            {
+                File.Copy(origen, destino, true);
+                Log($"Copiar - Finalizado: {origen} -> {destino}");
+            }
+            catch (System.ArgumentException)
+            {
+                Log($"Copiar - No se informa ruta destino");
+                resultado = false;
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Log($"Copiar - Archivo inexistente: {origen}");
+                resultado = false;
+            }
+            catch (System.IO.IOException)
+            {
+                Log($"Copiar - Ruta destino protegido contra escritura: {destino}");
+                resultado = false;
+            }
+            return resultado;
         }
 
         private string ArmarRutaArchivo(string ruta, string perfil, string archivo)

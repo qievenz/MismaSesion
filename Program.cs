@@ -10,13 +10,18 @@ namespace MismaSesion
     {
         static void Main(string[] args)
         {
-            string proceso = "inicio";
+            string proceso = "cierre";
             #if (!DEBUG)
                 proceso = args[0];
             #endif
-            var a = new SesionManager(proceso);
-            a.CopiarArchivos();
-        }
 
+            NavegadoresConfigurationSection navegadoresSeccion = ConfigurationManager.GetSection("Navegadores") as NavegadoresConfigurationSection;
+            for (int i = 0; i < navegadoresSeccion.Navegadores.Count; i++)
+            {
+                NavegadorConfigurationElement nav = navegadoresSeccion.Navegadores[i];
+                var manager = new SesionManager(nav, proceso);
+                manager.CopiarArchivos();
+            }
+        }
     }
 }
